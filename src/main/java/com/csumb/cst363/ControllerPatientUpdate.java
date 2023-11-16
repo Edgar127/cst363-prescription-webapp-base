@@ -1,9 +1,6 @@
 package com.csumb.cst363;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -33,23 +30,44 @@ public class ControllerPatientUpdate {
 		System.out.println("getUpdateForm "+ id );  // debug
 		
 		// TODO
-
-		// get a connection to the database
-		// using patient id and patient last name from patient object
-		// retrieve patient profile and doctor's last name
-
 		Patient p = new Patient();
 		p.setId(id);
-		
+		// using patient id and patient last name from patient object
+		// retrieve patient profile and doctor's last name
+		//ps.setString(1,p.getId());
 		// update patient object with patient profile data
-		
-		model.addAttribute("patient", p);
-		return "patient_edit";
+		// get a connection to the database
+		try(Connection con = getConnection();){
+			PreparedStatement ps =  con.prepareStatement("select first_name,last_name,birthdate,street,city,state,zip,primaryName from patient where id=?"
+					+Statement.RETURN_GENERATED_KEYS);
+			ps.setInt(1,  id);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()){
+				p.setFirst_name(rs.getString(1));
+				p.setLast_name(rs.getString(2));
+				p.setBirthdate(rs.getString(3));
+				p.setStreet(rs.getString(4));
+				p.setCity(rs.getString(5));
+				p.setState(rs.getString(6));
+				p.setZipcode(rs.getString(7));
+				p.setPrimaryName(rs.getString(8));
+				model.addAttribute("patient", p);
+				System.out.println("end getPatient "+p);
+				return "patient_show";
 
-		// if there is error
-		// model.addAttribute("message", <error message>);
-		// model.addAttribute("patient", p);
-		// return "index";
+			}else{
+				model.addAttribute("message", "Patient not found.");
+				model.addAttribute("patient", p);
+				return "patient_get";
+			}
+
+		} catch (SQLException e) {
+
+			model.addAttribute("message", "Error: " + e.getMessage());
+			model.addAttribute("patient", p);
+			return "index";
+		}
+
 	}
 	
 	
