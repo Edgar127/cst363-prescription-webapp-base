@@ -76,23 +76,40 @@ public class ControllerPatientUpdate {
 	 */
 	@PostMapping("/patient/edit")
 	public String updatePatient(Patient p, Model model) {
-		
-		System.out.println("updatePatient " + p);  // for debug 
-		
-		// TODO
-
 		// get a connection to the database
 		// validate the doctor's last name and obtain the doctor id
 		// update the patient's profile for street, city, state, zip and doctor id
-
-		model.addAttribute("message", "Update successful.");
-		model.addAttribute("patient", p);
-		return "patient_show";
 
 		// if there is error
 		// model.addAttribute("message",  <error message>);
 		// model.addAttribute("patient", p);
 		// return "patient_edit";
+
+
+
+		try (Connection con = getConnection();) {
+			PreparedStatement ps = con.prepareStatement("update patient set birthdate =? and street =? and city=? and state =? and zip =?");
+			ps.setString(1,p.getBirthdate());
+			ps.setString(2,p.getStreet());
+			ps.setString(3,p.getCity());
+			ps.setString(4,p.getState());
+			ps.setString(5,p.getZipcode());
+			int rc = ps.executeUpdate();
+			if (rc==1){
+				model.addAttribute("message", "Update successful.");
+				model.addAttribute("patient", p);
+				return "patient_show";
+			}else{
+				model.addAttribute("message", "Error. Update was not successful");
+				model.addAttribute("patient", p);
+				return "patient_edit";
+			}
+
+		}catch (SQLException e){
+			model.addAttribute("message", "SQL Error." + e.getMessage());
+			model.addAttribute("patient", p);
+			return "patient_edit";
+		}
 
 	}
 

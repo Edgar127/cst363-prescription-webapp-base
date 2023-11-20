@@ -49,6 +49,11 @@ public class ControllerPatientCreate {
 		// insert the patient profile into the patient table
 		// obtain the generated id for the patient and update patient object
 		try (Connection con = getConnection();){
+			//validates the doctors last name and obtains the doctor id
+			PreparedStatement psDoctor = con.prepareStatement("SELECT * FROM Doctor WHERE last_name = ?",
+					Statement.RETURN_GENERATED_KEYS);
+			psDoctor.setInt(1, p.getId());
+
 			PreparedStatement ps = con.prepareStatement("insert into patient(" +
 							"ssn,first_name,last_name,birthdate,street,city,state,zip,primaryName )" +
 							" values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -103,7 +108,7 @@ public class ControllerPatientCreate {
 		// TODO
 		try (Connection con = getConnection();) {
 			PreparedStatement ps = con.prepareStatement("select first_name,last_name,birthdate,street,city,state,zip,primaryName from patient where" +
-					"birthdate =? and street =? and city=? and state =? and zip =?");
+					"birthdate =? and street =? and city=? and state =? and zip =?");//id, name
 			ps.setString(1,p.getBirthdate());
 			ps.setString(2,p.getStreet());
 			ps.setString(3,p.getCity());
