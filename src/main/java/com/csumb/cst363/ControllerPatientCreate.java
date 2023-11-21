@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import org.apache.juli.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
@@ -109,18 +110,19 @@ public class ControllerPatientCreate {
 
 		// TODO
 		try (Connection con = getConnection();) {
-			PreparedStatement ps = con.prepareStatement("select first_name,last_name, Birth_date,street,city,state,Zip_code,Primary_name from patient where Birth_date = ? and street =? and city=? and state =? and Zip_code =?");//id, name
-			ps.setString(1,p.getBirthdate());
-			ps.setString(2,p.getStreet());
-			ps.setString(3,p.getCity());
-			ps.setString(4,p.getState());
-			ps.setString(5,p.getZipcode());
+			PreparedStatement ps = con.prepareStatement("select id,first_name,last_name, Birth_date,street,city,state,Zip_code,Primary_name from patient where last_name = ? and id = ?");//id, name
+			ps.setString(1,p.getLast_name());
+			ps.setInt(2,p.getId());
 
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()){
-				p.setFirst_name(rs.getString(1));
-				p.setLast_name(rs.getString(2));
-				p.setPrimaryName(rs.getString(3));
+				p.setFirst_name(rs.getString(2));
+				p.setBirthdate(rs.getString(4));
+				p.setStreet(rs.getString(5));
+				p.setCity(rs.getString(6));
+				p.setState(rs.getString(7));
+				p.setZipcode(rs.getString(8));
+				p.setPrimaryName(rs.getString(9));
 				model.addAttribute("patient", p);
 				System.out.println("end getPatient "+p);
 				return "patient_show";
