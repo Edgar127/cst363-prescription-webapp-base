@@ -1,10 +1,8 @@
 package com.csumb.cst363;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -52,16 +50,20 @@ public class ControllerPatientCreate {
 			//validates the doctors last name and obtains the doctor id
 			PreparedStatement psDoctor = con.prepareStatement("SELECT * FROM Doctor WHERE last_name = ?",
 					Statement.RETURN_GENERATED_KEYS);
-			psDoctor.setInt(1, p.getId());
+			psDoctor.setString(1, p.getLast_name());
+
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+			LocalDate date = LocalDate.parse(p.getBirthdate(), formatter);
+
 
 			PreparedStatement ps = con.prepareStatement("insert into patient(" +
-							"ssn,first_name,last_name,birthdate,street,city,state,zip,primaryName )" +
+							"SSN, First_name, Last_name, Birth_date, Street, City, State, Zip_code, Primary_name)" +
 							" values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1,p.getSsn());
 			ps.setString(2,p.getFirst_name());
 			ps.setString(3,p.getLast_name());
-			ps.setString(4,p.getBirthdate());
+			ps.setString(4,date.toString());
 			ps.setString(5,p.getStreet());
 			ps.setString(6,p.getCity());
 			ps.setString(7,p.getState());
@@ -107,8 +109,7 @@ public class ControllerPatientCreate {
 
 		// TODO
 		try (Connection con = getConnection();) {
-			PreparedStatement ps = con.prepareStatement("select first_name,last_name,birthdate,street,city,state,zip,primaryName from patient where" +
-					"birthdate =? and street =? and city=? and state =? and zip =?");//id, name
+			PreparedStatement ps = con.prepareStatement("select first_name,last_name, Birth_date,street,city,state,Zip_code,Primary_name from patient where Birth_date = ? and street =? and city=? and state =? and Zip_code =?");//id, name
 			ps.setString(1,p.getBirthdate());
 			ps.setString(2,p.getStreet());
 			ps.setString(3,p.getCity());
