@@ -52,8 +52,8 @@ public class ControllerPatientUpdate {
 				p.setZipcode(rs.getString(7));
 				p.setPrimaryName(rs.getString(8));
 				model.addAttribute("patient", p);
-				System.out.println("end getPatient "+p);
-				return "patient_show";
+				//System.out.println("end getPatient "+p);
+				return "patient_edit";
 
 			}else{
 				model.addAttribute("message", "Patient not found.");
@@ -65,7 +65,7 @@ public class ControllerPatientUpdate {
 
 			model.addAttribute("message", "Error: " + e.getMessage());
 			model.addAttribute("patient", p);
-			return "index";
+			return "patient_get";
 		}
 
 	}
