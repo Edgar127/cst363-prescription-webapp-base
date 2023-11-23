@@ -43,40 +43,49 @@ public class ControllerPrescriptionFill {
 //TODO
 		// obtain connection to database
 		try (Connection con = getConnection();) {
-			// valid pharmacy name and address in the prescription object
-			String pharmacyName = p.getPharmacyName();
-			String pharmacyAddress = p.getPharmacyAddress();
-
 			// obtain pharmacy ID
 			String pharmacyQuery = "SELECT id FROM pharmacy WHERE name = ? AND address = ?";
 			//executes a SQL query to find a pharmacy's ID based on provided pharmacyName and pharmacyAddress
 			try (PreparedStatement pharmacyStatement = con.prepareStatement(pharmacyQuery)) {
-				pharmacyStatement.setString(1, pharmacyName);
-				pharmacyStatement.setString(2, pharmacyAddress);
+				pharmacyStatement.setString(1, p.getPharmacyName());
+				pharmacyStatement.setString(2, p.getPharmacyAddress());
 				ResultSet pharmacyResult = pharmacyStatement.executeQuery();
 				if (pharmacyResult.next()) {
-					int pharmacyId = pharmacyResult.getInt("id");
+					String pharmacyName = pharmacyResult.getString("pharmacy_name");
+					String pharmacyAddress = pharmacyResult.getString("pharmacy_address");
 
 					// get prescription information for the rxid value and patient last name from prescription object.
 					String rxid = p.getRxid();
-					String patientLastName = p.getPatientLastName();
+					int patientId = p.getPatient_id();
 
-					String prescriptionQuery = "SELECT * FROM prescription WHERE rxid = ? AND patient_last_name = ?";
+					String prescriptionQuery = "SELECT * FROM prescription WHERE rxid = ? AND patient_id = ?";
 					try (PreparedStatement prescriptionStatement = con.prepareStatement(prescriptionQuery)) {
 						prescriptionStatement.setString(1, p.getRxid());
-						prescriptionStatement.setString(2, patientLastName);
+						prescriptionStatement.setInt(2, patientId);
 						ResultSet prescriptionResult = prescriptionStatement.executeQuery();
 						if (prescriptionResult.next()) {
 //							Set dateFilled and cost retrieved from the database to the Prescription object
-							p.setDateFilled(prescriptionResult.getString("dateFilled"));
-							p.setCost(prescriptionResult.getString("cost"));
+							p.setDateFilled(prescriptionResult.getString("date_prescribed"));
+
+							String prescriptionCostStatement = "SELECT i.cost FROM inventory i INNER JOIN prescription p ON i.Drug_name = p.Drug_name WHERE p.Drug_name = ?";
+							try(PreparedStatement prescriptionCostPrepStatement = con.prepareStatement(prescriptionCostStatement)) {
+								ResultSet prescriptionCostResult = prescriptionCostPrepStatement.executeQuery();
+
+								p.setCost(prescriptionCostResult.getString("cost"));
+							} catch (SQLException e) {
+								e.printStackTrace();
+								model.addAttribute("message", "Error: " + e.getMessage());
+								model.addAttribute("prescription", p);
+								return "prescription_fill";
+							}
 
 							// update prescription table row with pharmacy id, fill date.
-							String updateQuery = "UPDATE prescription SET pharmacy_id = ?, fill_date = ? WHERE rxid = ?";
-							try (PreparedStatement updateStatement = con.prepareStatement(updateQuery)) {
-								updateStatement.setInt(1, pharmacyId);
-								updateStatement.setDate(2, java.sql.Date.valueOf(LocalDate.now()));
-								updateStatement.setString(3, rxid);
+							String insertQuery = "INSERT PrescriptionRefill SET pharmacy_name = ?, pharmacy_address = ?, refill_date = ?, refill_count = ? WHERE prescription_rxid = ?";
+							try (PreparedStatement updateStatement = con.prepareStatement(insertQuery)) {
+								updateStatement.setString(1, pharmacyName);
+								updateStatement.setString(2, pharmacyAddress);
+								updateStatement.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
+								updateStatement.setInt(4, prescriptionResult.getInt("quantity_refills") - 1);
 								int rowsAffected = updateStatement.executeUpdate();
 								if (rowsAffected == 1) {
 //									prescription update successful

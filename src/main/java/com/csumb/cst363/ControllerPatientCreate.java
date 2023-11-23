@@ -54,8 +54,13 @@ public class ControllerPatientCreate {
 			psDoctor.setString(1, p.getLast_name());
 
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-			LocalDate date = LocalDate.parse(p.getBirthdate(), formatter);
+			LocalDate date;
 
+			if(!p.getBirthdate().isEmpty()) {
+				date = LocalDate.parse(p.getBirthdate(), formatter);
+			} else {
+				date = null;
+			}
 
 			PreparedStatement ps = con.prepareStatement("insert into patient(" +
 							"SSN, First_name, Last_name, Birth_date, Street, City, State, Zip_code, Primary_name)" +
@@ -64,7 +69,13 @@ public class ControllerPatientCreate {
 			ps.setString(1,p.getSsn());
 			ps.setString(2,p.getFirst_name());
 			ps.setString(3,p.getLast_name());
-			ps.setString(4,date.toString());
+
+			if (date != null) {
+				ps.setString(4,date.toString());
+			} else {
+				ps.setString(4, null);
+			}
+
 			ps.setString(5,p.getStreet());
 			ps.setString(6,p.getCity());
 			ps.setString(7,p.getState());
