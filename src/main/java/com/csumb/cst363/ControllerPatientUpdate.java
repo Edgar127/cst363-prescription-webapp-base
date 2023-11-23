@@ -39,7 +39,7 @@ public class ControllerPatientUpdate {
 		// get a connection to the database
 		try(Connection con = getConnection();){
 			PreparedStatement ps =  con.prepareStatement("select first_name,last_name,Birth_date ,street,city,state,Zip_code,Primary_name  from patient where id=?"
-					+Statement.RETURN_GENERATED_KEYS);
+					,Statement.RETURN_GENERATED_KEYS);
 			ps.setInt(1,  id);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()){
