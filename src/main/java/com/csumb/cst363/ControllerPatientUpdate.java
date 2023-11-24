@@ -1,6 +1,8 @@
 package com.csumb.cst363;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -43,14 +45,40 @@ public class ControllerPatientUpdate {
 			ps.setInt(1,  id);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()){
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+				LocalDate birthDate = null;
+
+				String firstName = rs.getString(1);
+				String lastName = rs.getString(2);
+				String birthDateStr = rs.getString(3);
+				String street = rs.getString(4);
+				String city = rs.getString(5);
+				String state = rs.getString(6);
+				String zipCode = rs.getString(7);
+				String primaryName = rs.getString(8);
+
+				if (birthDateStr != null && !birthDateStr.isEmpty()) {
+					birthDate = LocalDate.parse(birthDateStr, formatter);
+				}
+
+				p.setFirst_name(firstName != null ? firstName : "");
+				p.setLast_name(lastName != null ? lastName : "");
+
 				p.setFirst_name(rs.getString(1));
 				p.setLast_name(rs.getString(2));
-				p.setBirthdate(rs.getString(3));
-				p.setStreet(rs.getString(4));
-				p.setCity(rs.getString(5));
-				p.setState(rs.getString(6));
-				p.setZipcode(rs.getString(7));
-				p.setPrimaryName(rs.getString(8));
+
+				if (birthDate != null) {
+					p.setBirthdate(birthDate.toString());
+				} else {
+					p.setBirthdate(null);
+				}
+
+				p.setStreet(street != null ? street : "");
+				p.setCity(city != null ? city : "");
+				p.setState(state != null ? state : "");
+				p.setZipcode(zipCode != null ? zipCode : "");
+				p.setPrimaryName(primaryName != null ? primaryName : "");
+
 				model.addAttribute("patient", p);
 				//System.out.println("end getPatient "+p);
 				return "patient_edit";
@@ -88,12 +116,30 @@ public class ControllerPatientUpdate {
 
 
 		try (Connection con = getConnection();) {
-			PreparedStatement ps = con.prepareStatement("update patient set birthdate =? and street =? and city=? and state =? and zip =?");
-			ps.setString(1,p.getBirthdate());
-			ps.setString(2,p.getStreet());
-			ps.setString(3,p.getCity());
-			ps.setString(4,p.getState());
-			ps.setString(5,p.getZipcode());
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+			LocalDate birthDate = null;
+
+			if (p.getBirthdate() != null && !p.getBirthdate().isEmpty()) {
+				birthDate = LocalDate.parse(p.getBirthdate(), formatter);
+			}
+
+			PreparedStatement ps = con.prepareStatement("update patient set First_name = ?, Last_name = ?, Birth_date =?, street =?, city=?, state =?, Zip_code =?, Primary_name = ? where id = ?");
+			ps.setString(1,p.getFirst_name());
+			ps.setString(2,p.getLast_name());
+
+			if (birthDate != null) {
+				ps.setString(3, birthDate.toString());
+			} else {
+				ps.setString(3, null);
+			}
+
+			ps.setString(4,p.getStreet());
+			ps.setString(5,p.getCity());
+			ps.setString(6, p.getState());
+			ps.setString(7, p.getZipcode());
+			ps.setString(8, p.getPrimaryName());
+			ps.setInt(9, p.getId());
+
 			int rc = ps.executeUpdate();
 			if (rc==1){
 				model.addAttribute("message", "Update successful.");
