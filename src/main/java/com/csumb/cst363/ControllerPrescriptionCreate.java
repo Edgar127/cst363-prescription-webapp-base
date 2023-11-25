@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -67,6 +68,12 @@ public class ControllerPrescriptionCreate {
 				throw new SQLException("Doctor with ID " + p.getDoctor_id() + " doesn't exist.");
 			}
 
+			String doctorLastName = rsDoctor.getString(3);
+
+			if(!Objects.equals(doctorLastName, p.getDoctorLastName())) {
+				throw new SQLException("Doctor with Last Name " + p.getDoctorLastName() + " doesn't exist.");
+			}
+
 			//	3. Validate that patient id and name exists
 			PreparedStatement psPatient = con.prepareStatement("SELECT * FROM Patient WHERE ID = ?",
 					Statement.RETURN_GENERATED_KEYS);
@@ -77,6 +84,12 @@ public class ControllerPrescriptionCreate {
 			// TODO: I'm not sure if we actually need to verify that the name exists, I'd say we do but I'll leave it up to you guys
 			if(!rsPatient.next()) {
 				throw new SQLException("Patient with ID " + p.getPatient_id() + " doesn't exist.");
+			}
+
+			String patientLastName = rsPatient.getString(4);
+
+			if(!Objects.equals(patientLastName, p.getPatientLastName())) {
+				throw new SQLException("Patient with Last Name " + p.getPatientLastName() + " doesn't exist.");
 			}
 
 			//	4. Validate that Drug name exists and obtain drug id.
@@ -109,11 +122,9 @@ public class ControllerPrescriptionCreate {
 
 			//	6. Get generated value for rxid
 			// TODO: Okay, we get the value but what will it be used for? It can't be to set the RXID because the DB is generating the RXID on the insert
-//			int rxid;
-//			if(rsInsertPrescription.next()) {
-//				rxid = rsInsertPrescription.getInt(1);
-//			}
-
+			if(rsInsertPrescription.next()) {
+				p.setRxid(String.valueOf(rsInsertPrescription.getInt(1)));
+			}
 
 			// 7. Update prescription object and return
 			model.addAttribute("message", "Prescription created.");
@@ -127,11 +138,11 @@ public class ControllerPrescriptionCreate {
 
 			model.addAttribute("message", "SQL Error: " + e.getMessage());
 			model.addAttribute("prescription", p);
-			return "prescription_register";
+			return "prescription_create";
 		} catch (Exception e) {
 			model.addAttribute("message", "Error: " + e.getMessage());
 			model.addAttribute("prescription", p);
-			return "prescription_register";
+			return "prescription_create";
 		}
 	}
 	
