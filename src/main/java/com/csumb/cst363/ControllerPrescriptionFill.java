@@ -1,9 +1,6 @@
 package com.csumb.cst363;
 import java.lang.reflect.Type;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -82,58 +79,42 @@ public class ControllerPrescriptionFill {
 
 			p.setCost(prescriptionCostResult.getString("cost"));
 
-			String insertQuery = "INSERT PrescriptionRefill SET Prescription_RXID = ?, Refill_count = ?, pharmacy_name = ?, pharmacy_address = ?, Refill_date = ?";
-			PreparedStatement updateStatement = con.prepareStatement(insertQuery);
-			updateStatement.setString(1, prescriptionResult.getString("rxid"));
-			updateStatement.setInt(2, prescriptionResult.getInt("Quantity_refills") - 1);
-			updateStatement.setString(3, pharmacyResult.getString("name"));
-			updateStatement.setString(4, pharmacyResult.getString("address"));
-			updateStatement.setDate(5, java.sql.Date.valueOf(LocalDate.now()));
 
-			int rowsAffected = updateStatement.executeUpdate();
-			if (rowsAffected == 1) {
-//									prescription update successful
-				model.addAttribute("message", "Prescription filled.");
-				model.addAttribute("prescription", p);
-				return "prescription_show";
-			} else {
-				// prescription update fail
-				model.addAttribute("message", "Prescription update failed.");
+			String currentRefillCountQuery = "SELECT MAX(Refill_count) FROM PrescriptionRefill WHERE Prescription_RXID = ?";
+			PreparedStatement currentRefillCountStatement = con.prepareStatement(currentRefillCountQuery);
+			currentRefillCountStatement.setInt(1, Integer.parseInt(prescriptionResult.getString("rxid")));
+
+			ResultSet currentRefillCountResult = currentRefillCountStatement.executeQuery();
+
+			if(currentRefillCountResult.getInt("Refill_count") == prescriptionResult.getInt("Quantity_refills")) {
+				throw new SQLException("Ran out of refills " + " for " + p.getRxid());
 			}
 
-			String updatePrescriptionRefillCount = "UPDATE prescription SET Quantity_refills = ? WHERE RXID = ?";
-			PreparedStatement updatePresRefillCountStatement = con.prepareStatement(updatePrescriptionRefillCount);
-			updatePresRefillCountStatement.setInt(1, prescriptionResult.getInt("Quantity_refills") - 1);
-			updatePresRefillCountStatement.setInt(2, Integer.parseInt(p.getRxid()));
+			String insertQuery = "INSERT INTO PrescriptionRefill (Prescription_RXID, Refill_count, pharmacy_name, pharmacy_address) VALUES(?, ?, ?, ?)";
+			PreparedStatement updateStatement = con.prepareStatement(insertQuery);
+			updateStatement.setString(1, prescriptionResult.getString("rxid"));
+			updateStatement.setInt(2, currentRefillCountResult.getInt("Refill_count") + 1);
+			updateStatement.setString(3, pharmacyResult.getString("name"));
+			updateStatement.setString(4, pharmacyResult.getString("address"));
 
-			updatePresRefillCountStatement.executeUpdate();
+			int rowsAffected = updateStatement.executeUpdate();
+			if (rowsAffected == 0) {
+//									prescription update successful
+				model.addAttribute("message", "Prescription update failed.");
+				model.addAttribute("prescription", p);
+				return "prescription_fill";
+			}
+
+			model.addAttribute("message", "Prescription filled.");
+			model.addAttribute("prescription", p);
+			return "prescription_show";
 		} catch (SQLException e) {
 			e.printStackTrace();
 			model.addAttribute("message", "Error: " + e.getMessage());
 			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
-
-		// valid pharamcy name and address in the prescription object and obtain the
-		// pharmacy id.
-
-
-		// get prescription information for the rxid value and patient last name from
-		// prescription object.
-
-		// copy prescription information into the prescription object for display.
-
-		// get cost of drug and copy into prescription for display.
-
-		// update prescription table row with pharmacy id, fill date.
-		model.addAttribute("message", "Prescription filled.");
-		model.addAttribute("prescription", p);
-		return "prescription_show";
-		// if there is error
-		// model.addAttribute("message", <error message>);
-		// model.addAttribute("prescription", p);
-		// return "prescription_fill";
-	}
+    }
 	/*
 	 * return JDBC Connection using jdbcTemplate in Spring Server
 	 */
