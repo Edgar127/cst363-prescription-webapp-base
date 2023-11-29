@@ -56,14 +56,21 @@ public class ControllerPrescriptionCreate {
 		//	1. Obtain connection to database.
 		try (Connection con = getConnection();) {
 
+			PreparedStatement psSelectPharmacy = con.prepareStatement("SELECT * FROM Pharmacy ORDER BY RAND() LIMIT 1");
+			ResultSet randomPharmacy = psSelectPharmacy.executeQuery();
+
+			if(!randomPharmacy.next()){
+				throw new SQLException("No pharmacies exist");
+			}
+			int randomPharmacyID = randomPharmacy.getInt(1);
+			p.setPharmacyID(randomPharmacyID);
+
 			//	2. Validate that doctor id and name exists
-			PreparedStatement psDoctor = con.prepareStatement("SELECT * FROM Doctor WHERE ID = ?",
-					Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement psDoctor = con.prepareStatement("SELECT * FROM Doctor WHERE ID = ?");
 			psDoctor.setInt(1, p.getDoctor_id());
 
 			ResultSet rsDoctor = psDoctor.executeQuery();
 
-			// TODO: I'm not sure if we actually need to verify that the name exists, I'd say we do but I'll leave it up to you guys
 			if(!rsDoctor.next()) {
 				throw new SQLException("Doctor with ID " + p.getDoctor_id() + " doesn't exist.");
 			}
@@ -75,41 +82,34 @@ public class ControllerPrescriptionCreate {
 			}
 
 			//	3. Validate that patient id and name exists
-			PreparedStatement psPatient = con.prepareStatement("SELECT * FROM Patient WHERE ID = ?",
-					Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement psPatient = con.prepareStatement("SELECT * FROM Patient WHERE ID = ?");
 			psPatient.setInt(1, p.getPatient_id());
 
 			ResultSet rsPatient = psPatient.executeQuery();
 
-			// TODO: I'm not sure if we actually need to verify that the name exists, I'd say we do but I'll leave it up to you guys
 			if(!rsPatient.next()) {
 				throw new SQLException("Patient with ID " + p.getPatient_id() + " doesn't exist.");
 			}
 
-			String patientLastName = rsPatient.getString(4);
+			String patientLastName = rsPatient.getString(3);
 
 			if(!Objects.equals(patientLastName, p.getPatientLastName())) {
 				throw new SQLException("Patient with Last Name " + p.getPatientLastName() + " doesn't exist.");
 			}
 
 			//	4. Validate that Drug name exists and obtain drug id.
-			PreparedStatement psDrug = con.prepareStatement("SELECT * FROM Drug WHERE Name = ?",
-					Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement psDrug = con.prepareStatement("SELECT * FROM Drug WHERE Name = ?");
 			psDrug.setString(1, p.getDrugName());
 
 			ResultSet rsDrug = psDrug.executeQuery();
 
-			// TODO: I'm not sure if we actually need to verify that the drug name exists, I'd say we do but I'll leave it up to you guys
 			if(!rsDrug.next()) {
 				throw new SQLException("Drug with Name " + p.getDrugName() + " doesn't exist.");
 			}
 
 			//	5. Insert new prescription
-			PreparedStatement psInsertPrescription = con.prepareStatement(
-					"INSERT INTO Prescription" +
-							"(Doctor_id, Patient_id, Drug_name, Date_prescribed, Quantity_refills)" +
-							"VALUES(?, ?, ?, ?, ?)",
-					Statement.RETURN_GENERATED_KEYS);
+			String psInsertPresQuery = "INSERT INTO Prescription (Doctor_id, Patient_id, Drug_name, Date_prescribed, Quantity) VALUES(?, ?, ?, ?, ?)";
+			PreparedStatement psInsertPrescription = con.prepareStatement(psInsertPresQuery, Statement.RETURN_GENERATED_KEYS);
 			psInsertPrescription.setInt(1, p.getDoctor_id());
 			psInsertPrescription.setInt(2, p.getPatient_id());
 			psInsertPrescription.setString(3, p.getDrugName());
@@ -118,13 +118,21 @@ public class ControllerPrescriptionCreate {
 
 			psInsertPrescription.executeUpdate();
 
-			ResultSet rsInsertPrescription = psInsertPrescription.getGeneratedKeys();
+			String retrieveHighestRXIDQuery = "SELECT MAX(Prescription_RXID) FROM PrescriptionRefill";
+			PreparedStatement retrieveHighestRXIDStatement = con.prepareStatement(retrieveHighestRXIDQuery);
+			ResultSet retrieveHighestRXIDResult = retrieveHighestRXIDStatement.executeQuery();
+			retrieveHighestRXIDResult.next();
 
-			//	6. Get generated value for rxid
-			// TODO: Okay, we get the value but what will it be used for? It can't be to set the RXID because the DB is generating the RXID on the insert
-			if(rsInsertPrescription.next()) {
-				p.setRxid(String.valueOf(rsInsertPrescription.getInt(1)));
-			}
+			int rxid = retrieveHighestRXIDResult.getInt(1) + 1;
+			String psInsertPresRefillQuery = "INSERT INTO PrescriptionRefill (Prescription_RXID, Refill_count, Pharmacy_ID) VALUES(?, ?, ?)";
+			PreparedStatement psInsertPrescriptionRefill = con.prepareStatement(psInsertPresRefillQuery);
+			psInsertPrescriptionRefill.setInt(1, rxid);
+			psInsertPrescriptionRefill.setInt(2, 1);
+			psInsertPrescriptionRefill.setInt(3, randomPharmacyID);
+
+			psInsertPrescriptionRefill.executeUpdate();
+			p.setRxid(String.valueOf(rxid));
+			p.setRefills(1);
 
 			// 7. Update prescription object and return
 			model.addAttribute("message", "Prescription created.");

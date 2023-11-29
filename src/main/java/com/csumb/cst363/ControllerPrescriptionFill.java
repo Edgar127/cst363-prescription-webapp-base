@@ -82,7 +82,7 @@ public class ControllerPrescriptionFill {
 			ResultSet prescriptionResult = prescriptionStatement.executeQuery();
 
 			if(!prescriptionResult.next()) {
-				throw new SQLException("Prescription with RXID " + p.getRxid() + " and Patient ID " + p.getPatient_id() + " doesn't exists");
+				throw new SQLException("Prescription with RXID " + p.getRxid() + " doesn't exists");
 			}
 
 			// Setting Patient's Primary Doctor information
@@ -97,10 +97,7 @@ public class ControllerPrescriptionFill {
 			prescriptionCostPrepStatement.setString(1, prescriptionResult.getString("Drug_name"));
 
 			ResultSet prescriptionCostResult = prescriptionCostPrepStatement.executeQuery();
-
-			if(!prescriptionCostResult.next()) {
-				throw new SQLException("Prescription with RXID " + p.getRxid() + " and Patient ID " + p.getPatient_id() + " doesn't exists");
-			}
+			prescriptionCostResult.next();
 
 			p.setCost(prescriptionCostResult.getString("cost"));
 
