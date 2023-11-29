@@ -9,7 +9,7 @@
 	</p>
 	<div th:object="${prescription}">
 		<table>
-			<tr>
+			<tbody><tr>
 				<td>Rx:</td>
 				<td><span th:text="*{rxid}"></span></td>
 			</tr>
@@ -54,6 +54,10 @@
 				<td><span th:text="*{quantity}"></span></td>
 			</tr>
 			<tr>
+				<td>Refills remaining:</td>
+				<td><span th:text="*{refills}"></span></td>
+			</tr>
+			<tr>
 				<td></td>
 				<td></td>
 			</tr>
@@ -81,7 +85,7 @@
 				<td>Cost: $</td>
 				<td><span th:text="*{cost}"></span></td>
 			</tr>
-		</table>
+			</tbody></table>
 
 		<p>
 			<a href="/">Main Menu</a>

@@ -16,6 +16,8 @@ public class Prescription {
 	private String doctorFirstName;
 	private String doctorLastName;
 	private String dateCreated;
+
+	private int refills;
 	// following fields will be null or blank until prescription has been filled.
 	private int pharmacyID;    
 	private String pharmacyAddress; 
@@ -121,6 +123,15 @@ public class Prescription {
 	public void setDateCreated(String dateCreated) {
 		this.dateCreated = dateCreated;
 	}
+
+	public int getRefills() {
+		return refills;
+	}
+
+	public void setRefills(int refills) {
+		this.refills = refills;
+	}
+
 	@Override
 	public String toString() {
 		return "Prescription [rxid=" + rxid + ", drugName=" + drugName + ", quantity=" + quantity + ", patient_id="
